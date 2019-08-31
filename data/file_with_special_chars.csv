@@ -1,0 +1,11 @@
+"nome","sobrenome","endereco"
+"nome normal","sobrenome
+normal\","
+Rua da esquina
+ Nº47 
+Próximo a ,quadra"
+"Fulano","
+de "tal","rua direita
+ com a esquina\"
+ da quadra"
+"numero com virgula","sobrenome " com aspas e aspas escapadas \" no meio","7,8"
