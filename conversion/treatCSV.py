@@ -1,3 +1,5 @@
+# Developed by: Genicleito Gonçalves
+
 # Function to handle CSV files by removing characters such as quotation marks, backslash, comma, semicolon.
 def treatCSV(source, target, sep):
     import os
@@ -12,7 +14,7 @@ def treatCSV(source, target, sep):
     """
     sep_aux = "_separator_aux_"
     target_aux = target + ".part"
-    
+
     seds = [
         "sed -r 's/\\\"\\" + sep + "\\\"/" + sep_aux + "/g' " + source + " > " + target,      # substitui o separador pelo separador auxiliar
         
