@@ -2,7 +2,6 @@
 
 # Function to handle CSV files by removing characters such as quotation marks, backslash, comma, semicolon.
 def treatCSV(source, target, sep):
-    import os
     """Function to handle CSV files by removing characters such as quotation marks, backslash, comma and semicolon.
     
     Parameters:
@@ -12,6 +11,8 @@ def treatCSV(source, target, sep):
     
     Example: treatCSV('/home/user/source_file.csv', '/home/user/output_file.csv', sep = ",")
     """
+    import os
+    
     sep_aux = "_separator_aux_"
     target_aux = target + ".part"
 
