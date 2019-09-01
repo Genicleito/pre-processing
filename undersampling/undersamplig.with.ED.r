@@ -1,3 +1,6 @@
+# Maintainer: Genicleito Gonçalves <genicleito@live.com>
+# Author: Genicleito Gonçalves <http://genicleito.github.io>
+
 #  Undersampling Function to obtain the best subset of records from an unbalanced database when considered a 
 # categorical variable of two classes, using Euclidean Distance.
 undersampling.ed = function(original.data, variable.name, measure = "mean", optional.new.size = -1) {
