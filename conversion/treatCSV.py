@@ -15,25 +15,29 @@ def treatCSV(source, target, sep):
     sep_aux = "_separator_aux_"
     target_aux = target + ".part"
 
+    # List of sed commands used to treat the dataset
     seds = [
-        "sed -r 's/\\\"\\" + sep + "\\\"/" + sep_aux + "/g' " + source + " > " + target,      # substitui o separador pelo separador auxiliar
+        "sed -r 's/\\\"\\" + sep + "\\\"/" + sep_aux + "/g' " + source + " > " + target,      # replaces the separator with the auxiliary separator
         
-        # Adicionada a expresão '+'' aos seds que consideram a presença de contra-barra para permitir afetar uma ou mais contra-barras
-        "sed -r 's/\\\\+\\" + sep_aux + "/" + sep_aux + "/g' " + target + " > " + target_aux,     # remove contra-barras presentes antes do separador auxiliar
-        "sed -r 's/\\\\+\\\"//g' " + target_aux + " > " + target,                   # remove aspas escapadas com contra-barra
+        # Using the '+' character in regex has the function of obtaining one or more backslashes
+        "sed -r 's/\\\\+\\" + sep_aux + "/" + sep_aux + "/g' " + target + " > " + target_aux,     # remove backslashes before auxiliary separator
+        "sed -r 's/\\\\+\\\"//g' " + target_aux + " > " + target,                   # remove quotes with backslash
 
-        "sed -r 's/^\\\"|\"$/_control_quotes_/g' " + target + " > " + target_aux,    # guarda as aspas que delimitam todo o registro
-        "sed -r 's/\\\"//g' " + target_aux + " > " + target,                  # remove aspas não escapadas
+        "sed -r 's/^\\\"|\"$/_control_quotes_/g' " + target + " > " + target_aux,    # save the quotation marks that mark the beginning and end of the record
+        "sed -r 's/\\\"//g' " + target_aux + " > " + target,                  # remove quotes without backslashes
         
-        "sed -r 's/\\" + sep_aux + "/\\\"\\,\\\"/g' " + target + " > " + target_aux,    # define o separador como vírgula e restaura as aspas delimitadoras dos campos
-        "sed -r 's/_control_quotes_/\\\"/g' " + target_aux + " > " + target      # restaura as aspas no início e fim das linhas
+        "sed -r 's/\\" + sep_aux + "/\\\"\\,\\\"/g' " + target + " > " + target_aux,    # set the comma separator and restore quotation marks between fields
+        "sed -r 's/_control_quotes_/\\\"/g' " + target_aux + " > " + target      # restore quotation marks at beginning and end of record
     ]
 
+    # Apply the sed commands to the dataset
     for sed in seds:
         print("Appling [" + sed + "]")
         if(os.system(sed) != 0):
             print("==> [ERROR]")
+            # Remove files created in proccess
             os.system("rm -rf " + target + "*")
             return
+    # Remove the auxiliar file
     os.system("rm -rf " + target_aux)
     print("SUCESS")
