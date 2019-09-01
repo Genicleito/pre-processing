@@ -35,7 +35,7 @@ def treatCSV(source, target, sep):
         print("Appling [" + sed + "]")
         if(os.system(sed) != 0):
             print("==> [ERROR]")
-            # Remove files created in proccess
+            # Remove files created in process
             os.system("rm -rf " + target + "*")
             return
     # Remove the auxiliar file
