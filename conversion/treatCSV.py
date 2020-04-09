@@ -18,27 +18,21 @@ def treatCSV(source, target, sep):
 
     # List of sed commands used to treat the dataset
     seds = [
-        "sed -r 's/\\\"\\" + sep + "\\\"/" + sep_aux + "/g' " + source + " > " + target,      # replaces the separator with the auxiliary separator
+        "sed -r 's/\\\"\\" + sep + "\\\"/" + sep_aux + "/g' " + source,      # replaces the separator with the auxiliary separator
         
         # Using the '+' character in regex has the function of obtaining one or more backslashes
-        "sed -r 's/\\\\+\\" + sep_aux + "/" + sep_aux + "/g' " + target + " > " + target_aux,     # remove backslashes before auxiliary separator
-        "sed -r 's/\\\\+\\\"//g' " + target_aux + " > " + target,                   # remove quotes with backslash
+        "sed -r 's/\\\\+\\" + sep_aux + "/" + sep_aux + "/g'",     # remove backslashes before auxiliary separator
+        "sed -r 's/\\\\+\\\"//g'",                   # remove quotes with backslash
 
-        "sed -r 's/^\\\"|\"$/_control_quotes_/g' " + target + " > " + target_aux,    # save the quotation marks that mark the beginning and end of the record
-        "sed -r 's/\\\"//g' " + target_aux + " > " + target,                  # remove quotes without backslashes
+        "sed -r 's/^\\\"|\"$/_control_quotes_/g'",    # save the quotation marks that mark the beginning and end of the record
+        "sed -r 's/\\\"//g'",                  # remove quotes without backslashes
         
-        "sed -r 's/\\" + sep_aux + "/\\\"\\,\\\"/g' " + target + " > " + target_aux,    # set the comma separator and restore quotation marks between fields
-        "sed -r 's/_control_quotes_/\\\"/g' " + target_aux + " > " + target      # restore quotation marks at beginning and end of record
+        "sed -r 's/\\" + sep_aux + "/\\\"\\,\\\"/g'",    # set the comma separator and restore quotation marks between fields
+        "sed -r 's/_control_quotes_/\\\"/g' > " + target      # restore quotation marks at beginning and end of record
     ]
+    re_sed_commands = " | ".join(seds)
 
-    # Apply the sed commands to the dataset
-    for sed in seds:
-        print("Appling [" + sed + "]")
-        if(os.system(sed) != 0):
-            print("==> [ERROR]")
-            # Remove files created in process
-            os.system("rm -rf " + target + "*")
-            return
-    # Remove the auxiliar file
-    os.system("rm -rf " + target_aux)
-    print("SUCESS")
+    # Apply the sed commands
+    if(os.system(re_sed_commands) != 0):
+        return False
+    return True
