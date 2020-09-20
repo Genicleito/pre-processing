@@ -30,8 +30,8 @@ def inverse(u, v):
     # u3, v3 = long(u), long(v)
     u1, v1 = 1, 0
     while v > 0:
-        q=divmod(u, v)[0]
-        u1, v1 = v1, u1 - v1*q
+        q = divmod(u, v)[0]
+        u1, v1 = v1, u1 - v1 * q
         u, v = v, u - v*q
     while u1 < 0:
         u1 = u1 + v
@@ -49,8 +49,9 @@ def bytes_to_long(s):
     from unidecode import unidecode
     
     acc = 0
+    # if not isinstance(s, bytes): s = unidecode(str(s)).encode('utf-8')
+    if not isinstance(s, bytes): s = str(s).encode('utf-8')
     length = len(s)
-    s = unidecode(s).encode('utf-8')
     if length % 4:
         extra = (4 - length % 4)
         s = '\000'.encode('utf-8') * extra + s
@@ -131,3 +132,155 @@ def generateRSA(bits=2048, e=2**16+1, prime_false_positive_prob=1e-12):
     # decrypt(c, n, d)==32485
 
     return private_key, public_key
+
+
+
+
+
+def encryptDataFrame():
+    import Crypto.Util.number
+    from Crypto.PublicKey import RSA
+    from unidecode import unidecode
+    import pandas as pd
+    import numpy as np
+    import datetime
+    import base64
+    from tqdm import tqdm
+
+    # pd.set_option('max_colwidth', None)
+
+    def encrypt(msg, public_key):
+        if not msg:
+            return None
+        encrypted_msg = public_key.encrypt(str(msg).encode('utf-8'), 32)[0]
+        return base64.b64encode(encrypted_msg).decode('utf-8', errors='ignore')
+        
+    def decrypt(encrypted_msg, private_key):
+        if not encrypted_msg:
+            return None
+        decoded_encrypted_msg = base64.b64decode(encrypted_msg)
+        return private_key.decrypt(decoded_encrypted_msg).decode('utf-8', errors='ignore')
+        
+    def rsa_encrypt_df(df, variaveis, bits=2048, backup=True):
+        key = Crypto.PublicKey.RSA.generate(bits) # generate pub and private key
+        publickey = key.publickey() # public key export for exchange
+
+        df = df.copy()
+        t_s = datetime.datetime.now()
+        if isinstance(variaveis, str): variaveis = [variaveis]
+        for var in variaveis:
+            df[var] = np.where(df[var].isna(), None, df[var])
+            df[var] = df[var].apply(encrypt, args=(key,), convert_dtype=False)
+        return df, key
+
+    def rsa_decrypt_df(df, variaveis, key):
+        import Crypto.Util.number
+        df = df.copy()
+        if isinstance(variaveis, str): variaveis = [variaveis]
+        for var in variaveis:
+            df[var] = np.where(df[var].isna(), None, df[var])
+            df[var] = df[var].apply(decrypt, args=(key,), convert_dtype=False)
+        return df
+    
+    variaveis = ['id', 'host_name', 'name', 'room_type']
+    df = pd.read_csv("C:/Users/genic/Downloads/listings.csv")
+
+    d_s = datetime.datetime.now()
+    df_encrypted, k = rsa_encrypt_df(df, variaveis)
+    print("Tempo de execução:", datetime.datetime.now() - d_s)
+
+    print(f"{k.publickey().exportKey()}\n\n{k.exportKey()}")
+    df_encrypted[variaveis]
+
+    d_s = datetime.datetime.now()
+    df_decrypted = rsa_decrypt_df(df_encrypted, variaveis, k)
+    print("Tempo de execução:", datetime.datetime.now() - d_s)
+
+    for var in variaveis:
+        df[var] = df[var].astype(str)
+        df_decrypted[var] = df_decrypted[var].astype(str)
+
+    df_merge = df_decrypted[variaveis].merge(df[variaveis].assign(flag=1), on=variaveis, how='left')
+    if df_merge.shape[0] == df_decrypted.shape[0]:
+        print("Sucesso")
+    else:
+        print("Erro")
+        print("Qtd. registros diferentes:", df_merge[df_merge['flag'].isna()].shape[0])
+    df_decrypted[variaveis]
+
+
+
+
+class RSAKey:
+    def __init__(self, anotherKey=None, bits=2048, p=None, q=None, u=None, d=None, e=2**16+1, n=None, prime_false_positive_prob=1e-12): 
+        import Crypto.Util.number
+        if isinstance(anotherKey, RSAKey):
+            for attr in anotherKey.__dict__.keys():
+                setattr(self, attr, getattr(anotherKey, attr))
+        elif isinstance(anotherKey, dict):
+            for attr in anotherKey.keys():
+                setattr(self, attr, anotherKey[attr])
+        else:
+            self.bits = bits
+            self.e = e
+            self.prime_false_positive_prob = prime_false_positive_prob
+
+            self.p = p if p else Crypto.Util.number.getStrongPrime(self.bits, e=self.e, false_positive_prob=self.prime_false_positive_prob)
+            self.q = q if q else Crypto.Util.number.getStrongPrime(self.bits - (self.bits>>1), e=self.e, false_positive_prob=self.prime_false_positive_prob)
+            (self.p, self.q) = (self.q, self.p) if self.p > self.q else (self.p, self.q)
+
+            self.u = u if u else Crypto.Util.number.inverse(self.p, self.q) # or inverse(p, q)
+            self.n = n if n else self.p * self.q
+            self.phi = (self.p - 1) * (self.q - 1)
+
+            self.d = d if d else Crypto.Util.number.inverse(self.e, self.phi) # or inverse(e, phi)
+
+    def hasPrivateKey(self):
+        return hasattr(self, 'd')
+
+    def hasPublicKey(self):
+        return not self.hasPrivateKey()
+
+    def exportPrivateKey(self):
+        return {'p': self.p, 'q': self.q, 'd': self.d, 'u': self.u}
+    
+    def exportPublicKey(self):
+        return {'n': self.n, 'e': self.e}
+        
+    def exportKey(self):
+        return self.__dict__
+
+    def encrypt(self, x):
+        """
+        Encripta o número x.
+
+        Params:
+            x: Número inteiro a ser criptografado. Ideal para chaves identificadoras, por exemplo.
+        
+        Return:
+            Retorna um valor encriptado de `x`.
+        """
+        if not x:
+            return None
+        return pow(x, self.e, self.n) # x**e % n
+    
+    def decrypt(self, x):
+        """
+        Decripta o número x.
+
+        Params:
+            x: Número inteiro criptografado.
+        
+        Return:
+            Retorna o valor decriptado de `x` se a chave atual for uma chave privada.
+        """
+        if not hasattr(self, 'd'): # if not has private key return
+            raise Exception("Sorry! Private key is necessary!")
+        if hasattr(self, 'p') and hasattr(self, 'q') and hasattr(self, 'u'): 
+            m1 = pow(x, self.d % (self.p - 1), self.p)
+            m2 = pow(x, self.d % (self.q - 1), self.q)
+            h = m2 - m1
+            if h < 0: h += self.q
+            h = h * self.u % self.q
+            return h * self.p + m1
+        return pow(x, self.d, self.n)
