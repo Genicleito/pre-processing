@@ -1,5 +1,3 @@
-# OBS: considerar tbm casos: ", | ,"
-
 # Developed by: Genicleito Gonçalves
 
 # Function to handle CSV files by removing characters such as quotation marks, backslash, comma, semicolon.
