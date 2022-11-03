@@ -43,7 +43,7 @@ def undersampling(df, column, measure='mean', new_size=None):
     distances = major_class_df.apply(euclidian_distance, axis=1, **{'y': applied_measure})
     
     # getting k nearest neighbors (with k equal to new_size)
-    k_nearest = distances.sort_values(ascending=False).iloc[:new_size]
+    k_nearest = distances.sort_values().iloc[:new_size]
     
     # Get the best set of records of size new.size
     best_subset = major_class_df.loc[k_nearest.index]
